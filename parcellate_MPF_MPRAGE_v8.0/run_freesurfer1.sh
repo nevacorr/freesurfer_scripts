@@ -1,10 +1,12 @@
-#!/usr/bin/bash
+#!/bin/bash
+
+# Usage: bash run_freesurfer1.sh
 
 # set directory for freesurfer output
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output 
 
 # Set output dirextory for nifti and flipped images
-OUTPUT_DIR=/home/toddr/neva/MPF/nifti_outputs
+OUTPUT_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/nifti_outputs
 mkdir -p "${OUTPUT_DIR}"
 
 # Load sform/qform from reference image

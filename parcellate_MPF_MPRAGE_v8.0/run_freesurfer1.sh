@@ -1,53 +1,61 @@
 #!/usr/bin/bash
 
-export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output # set directory for freesurfer output
+# set directory for freesurfer output
+export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output 
+
+# Set output dirextory for nifti and flipped images
+OUTPUT_DIR=/home/toddr/neva/MPF/nifti_outputs
+mkdir -p "${OUTPUT_DIR}"
+
+# Load sform/qform from reference image
+sform_matrix=$(fslorient -getsform MPRAGE.nii)
+qform_matrix=$(fslorient -getqform MPRAGE.nii)
+read -r -a sform_array <<< "$sform_matrix"
+read -r -a qform_array <<< "$qform_matrix"
 
 while read filepath; do
 
 	echo "Processing file: ${filepath}"
 
-	#Get directory path and filename without extension
  	dir=$(dirname "${filepath}")
 	base=$(basename "${filepath}" .hdr)
-
-	# Get last directory name as a unique prefix
 	parent_dir=$(basename "${dir}")
-	
-	# Define output .nii file path
-	nii_file="${dir}/${base}.nii"
+
+	input_base="${dir}/${base}"	
+	output_base="${OUTPUT_DIR}/${parent_dir}_${base}"	
+	nii_file="${output_base}.nii.gz"
+	flipped_file="${output_base}_flipped.nii.gz"
 	
 	# Construct a unique subject ID using directory name
-	subj_id="${parent_dir}_${base}_freesurfer"
-	subject_dir="${SUBJECTS_DIR}/${subj_id}"
+	subject_id="${parent_dir}_${base}_freesurfer"
 
-	if [ -f "${nii_file}" ]; then
-		echo "NIFTI file ${nii_file} already exists, skipping conversion"
-	else
-		# Convert .hdr/.img file to .nii
-		echo "Converting ${filepath} to ${nii_file} with fslchfiletype"
-		input_base="${dir}/${base}"
-        	fslchfiletype NIFTI "${input_base}" "${nii_file}"
+	# Skip this subject if already processed
+	if [ -d "${SUBJECTS_DIR}/${subject_id}" ]; then
+	   echo "Subject ${subject_id} already processed, skipping..."
+	   continue
 	fi
 
-	# Remove previous freesurfer output for this subject if it exists
-	rm -rf "${subject_dir}"
-	mkdir -p "${subject_dir}/mri/orig"
+	#Clean up old files
+	rm -rf "${nii_file}" "${flipped_file}"
 
-	# Converting .ni to 001.mgz for FreeSurfer input
-	mri_convert "${nii_file}" "${subject_dir}/mri/orig/001.mgz"
+	# Convert from analyze to nifti format
+	echo "Converting ${filepath} to ${nii_file}"
+       	fslchfiletype NIFTI_GZ "${input_base}" "${nii_file}"
 
-	# Run custom normalization for MPRAGE input
-	mri_normalize -mprage -b 20 -n 5 \
- 		"${subject_dir}/mri/orig/001.mgz" \
-		"${subject_dir}/mri/nu.mgz"
+	# Swap axes
+	echo "Swapping axes"	
+	fslswapdim "${nii_file}" -z -x -y "${flipped_file}"
 
-	# Create expected symbolic link
-	ln -sf "${subject_dir}/mri/orig/001.mgz" "${subject_dir}/mri/orig.mgz"
-
-	read -p "Press Enter to continue to recon-all (or Ctrl+C to cancel)..."	
+	# Apply orientation from reference
+	echo "Applying orientation from reference MPRAGE.nii"
+	fslorient -setsform "${sform_array[@]}" "${flipped_file}"
+	fslorient -setqform "${qform_array[@]}" "${flipped_file}"
+	fslorient -setsformcode 1 "${flipped_file}"
+	fslorient -setqformcode 1 "${flipped_file}"
 	
-	# Run recon-all from autorecon2 using custom normalization 
-	recon-all -subjid "${subj_id}" -autorecon2 -autorecon3 -parallel
+	# Run freesurfer
+        echo "Running freesurfer"	
+	recon-all -i "${flipped_file}" -s "${subject_id}" -all -parallel 
 
 done < subjectstorun1.txt
 	

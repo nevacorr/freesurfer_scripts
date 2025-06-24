@@ -5,7 +5,7 @@
 # Usage: bash compute_jaccard_dice_mprage_mpf.sh
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
-OUTPUT_FILE="mri_seg_overlap_summary.csv"
+OUTPUT_FILE="mprage_mpf_seg_overlap_summary.csv"
 
 # Find first valid pair to extract list of label names
 

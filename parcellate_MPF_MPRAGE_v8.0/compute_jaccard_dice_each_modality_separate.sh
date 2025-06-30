@@ -33,6 +33,8 @@ echo "$header" > "$OUTPUT_FILE"
 
 # Function to compare two freesurfer outputs
 compare_pair() {
+
+	echo "##########################Running new subject ############################"
 	local subj_id=$1
 	local modality=$2
 	local dir1=$3
@@ -40,11 +42,33 @@ compare_pair() {
 
 	aseg1="$dir1/mri/aparc+aseg.mgz"
 	aseg2="$dir2/mri/aparc+aseg.mgz"
+	rawavg1="$dir1/mri/rawavg.mgz"
+	rawavg2="$dir2/mri/rawavg.mgz"
 
-	if [[ -f "$aseg1" && -f "$aseg2" ]]; then
+	# Temporary aligned aseg
+        regfile="${SUBJECTS_DIR}/tmp_${subj_id}_${modality}_reg.lta"
+	aseg2_coreg="${SUBJECTS_DIR}/tmp_${subj_id}_${modality}_aseg2_coreg.mgz"
+
+	echo "aseg1" "$aseg1"
+	echo "aseg2" "$aseg2"
+	echo "rawavg1" "$rawavg1"
+	echo "rawavg2" "$rawavg2"
+
+	if [[ -f "$aseg1" && -f "$aseg2" && -f "$rawavg1" && -f "$rawavg2" ]]; then
+		echo "Registering #modality scan 2 to scan 1 for $subj_id "
+
+		# Compute tranforms to align rawvg2 to rawavg1
+		mri_coreg --mov "$rawavg2" --ref "$rawavg1" --reg "$regfile" 
+
+		# Apply tranform to aseg2 to resampel into rawavg1 space	
+		mri_vol2vol --mov "$aseg2" \
+			    --targ "$rawavg1" \
+			    --reg "$regfile" \
+			    --o "$aseg2_coreg" \
+			    --interp nearest
+
 		echo "Comparing $modality for $subj_id"
-
-		overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2")
+		overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2_coreg")
 
 		line="$subj_id,$modality"
 		while read -r label dice jaccard; do
@@ -52,17 +76,22 @@ compare_pair() {
 		done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
 
 		echo "$line" >> "$OUTPUT_FILE"
+
+#		rm -f "$aseg1_coreg" "$aseg2_coreg" 
 	else
-		echo "Skipping $subj_id (missing aparc+aseg.mgz for $modality)"
+		echo "Skipping $subj_id (missing aseg or rawavg)"
 	fi
 }
 
 # Loop over all subjects and compare MPRAGE scans
 for mprage1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
 	subj_id=$(basename "$mprage1" | sed 's/-1_mprage1_freesurfer//')
+	echo "subj_id" $subj_id
 	mprage2="$SUBJECTS_DIR/${subj_id}-2_mprage1_freesurfer"
 	if [[ -d "$mprage1" && -d "$mprage2" ]]; then
 		compare_pair "$subj_id" "MPRAGE" "$mprage1" "$mprage2"
+	else
+		echo Cannot compare $subj_id $mprage1 $mprage2
 	fi        
 done
 
@@ -76,4 +105,4 @@ for mpf1 in "$SUBJECTS_DIR"/H??-1_MPFcor_freesurfer; do
 	fi        
 done
 
-echo "Finished. Table saved to $OUTPUT_FILE"	
+

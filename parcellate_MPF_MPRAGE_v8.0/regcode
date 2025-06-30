@@ -1,0 +1,3 @@
+#mri_coreg --mov H02-2_mprage1_freesurfer/mri/rawavg.mgz --ref H02-1_mprage1_freesurfer/mri/rawavg.mgz --reg tmp_H02_mprage_reg.lta
+
+mri_vol2vol --mov H02-2_mprage1_freesurfer/mri/aparc+aseg.mgz --targ H02-1_mprage1_freesurfer/mri/rawavg.mgz  --reg tmp_H02_mprage_reg.lta  --o tmp_H02-2_mprage_aseg2_coreg.mgz --interp nearest

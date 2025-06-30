@@ -1,69 +1,127 @@
 #!/bin/bash
 
-# Compute Dice and Jaccard similarity coefficients for MPF and MPRAGE obtained in same session
+# Compare within-modality scans (MPRAGE-MPRAGE and MPF-MPF) using Dice and Jaccard similarity coefficients 
 
-# Usage: bash compute_jaccard_dice_mprage_mpf.sh
+# Usage: bash compute_jaccard_dice_each_modality_separate.sh
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
-OUTPUT_FILE="mprage_mpf_seg_overlap_summary.csv"
+OUTPUT_FILE="mprage_mpf_overlap_summary.csv"
+TMP_DIR="./tmp_coreg_mpfmprage"
 
-# Find first valid pair to extract list of label names
+mkdir -p "$TMP_DIR"
 
-for mprage_dir in "$SUBJECTS_DIR"/H??-?_mprage1_freesurfer; do
-	subj_id=$(basename "$mprage_dir" | cut -d'_' -f1)
 
-        echo "Subject ID: $subj_id"	
+# Function to coregister aparc+aseg.mgz from two separate sessions of same subject
+coregister_pair() {
 
-	mpf_dir="$SUBJECTS_DIR/${subj_id}_MPFcor_freesurfer"
+	echo "##########################Running new subject ############################"
+	local subj_id=$1
+	local tp=$2
 
-	aseg1="$mprage_dir/mri/aparc+aseg.mgz"
-	aseg2="$mpf_dir/mri/aparc+aseg.mgz"
+	local mprage_dir="$SUBJECTS_DIR/${subj_id}-${tp}_mprage1_freesurfer"
+	local mpf_dir="$SUBJECTS_DIR/${subj_id}-${tp}_MPFcor_freesurfer"
+
+	local aseg_mprage="$mprage_dir/mri/aparc+aseg.mgz"
+	local aseg_mpf="$mpf_dir/mri/aparc+aseg.mgz"
+	local rawavg_mprage="$mprage_dir/mri/rawavg.mgz"
+	local rawavg_mpf="$mpf_dir/mri/rawavg.mgz"
+
+        local regfile="${TMP_DIR}/${subj_id}_tp${tp}_mpf2mprage.lta"
+	local aseg_mpf_coreg="${TMP_DIR}/${subj_id}_tp${tp}_aseg_mpf_coreg.mgz"
+
+	if [[ -f "$aseg_mprage" && -f "$aseg_mpf" && -f "$rawavg_mprage" && -f "$rawavg_mpf" ]]; then
+		echo "Registering MPF to MPRAGE for $subj_id "
+
+		# Compute tranforms to align rawvg mpf to rawavg mprage
+		mri_robust_register --mov "$rawavg_mpf" \
+			--dst "$rawavg_mprage" \
+			--lta "$regfile" \
+			--satit
+
+		# Apply tranform to aseg mpf to resampel into rawavg mprage space	
+		mri_vol2vol --mov "$aseg_mpf" \
+			    --targ "$aseg_mprage" \
+			    --lta "$regfile" \
+			    --o "$aseg_mpf_coreg" \
+			    --interp nearest
+	
+		echo "Saved: $aseg_mpf_coreg"
+	else
+		echo "Skipping coregistration for $subj_id T$tp (missing input files)"
+	fi
+}
+
+# Loop over all subjects and coregister
+for tp in 1 2; do
+	for mprage in "$SUBJECTS_DIR"/H??-"$tp"_mprage1_freesurfer; do
+		subj_id=$(basename "$mprage" | sed "s/-${tp}_mprage1_freesurfer//")
+		mpf="$SUBJECTS_DIR/${subj_id}-${tp}_MPFcor_freesurfer"
+		if [[ -d "$mpf" ]]; then
+			coregister_pair "$subj_id" "$tp"
+		fi
+	done        
+done
+
+echo "Coregistraiton for all subjects complete"
+echo "------------------------------------------------------"
+
+# Extract label names from first usable pair
+for tp in 1 2; do
+	for mprage in "$SUBJECTS_DIR"/H??-"$tp"_mprage1_freesurfer; do
+		subj_id=$(basename "$mprage" | sed "s/-${tp}_mprage1_freesurfer//")
+	aseg1="$mprage/mri/aparc+aseg.mgz"
+	aseg2="${TMP_DIR}/${subj_id}_tp${tp}_aseg_mpf_coreg.mgz"
 
 	if [[ -f "$aseg1" && -f "$aseg2" ]]; then
-		echo "Extracting label list from $subj_id"	
+		echo "Extracting label list from $subj_id timepoint $tp"	
 		mapfile -t LABELS < <(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2" | awk 'NR>1 {print $2}')
 		break
 	fi
 done
 
 # Build outputfile header
-header="SubjectID"
+header="SubjectID,Timepoint"
 for label in "${LABELS[@]}"; do 
 	header+=",DICE_$label,JACCARD_$label"
 done
 echo "$header" > "$OUTPUT_FILE"
 
-# Loop over all subjects
-for mprage_dir in "$SUBJECTS_DIR"/H??-?_mprage1_freesurfer; do
-	subj_id=$(basename "$mprage_dir" | cut -d'_' -f1)
-	mpf_dir="$SUBJECTS_DIR/${subj_id}_MPFcor_freesurfer"
 
-        echo "Processing Subject ID: $subj_id"	
+# Function to calculate overlap between parcellations and compute DICE and Jaccard coefficients
+
+calculate_overlap() {
+
+	local subj_id=$1
+	local tp=$2
+
+	local mprage_dir="$SUBJECTS_DIR/${subj_id}-${tp}_mprage1_freesurfer"
+	local aseg_mprage="$mprage_dir/mri/aparc+aseg.mgz"
+        local aseg_mpf_coreg="${TMP_DIR}/${subj_id}_tp${tp}_aseg_mpf_coreg.mgz"
+
+	if [[ -f "$aseg_mprage" && -f "$aseg_mpf_coreg" ]]; then
+		echo "Calculating Dice/Jaccard for $subj_id timepoint $tp"
+
+		overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg_mprage" "$aseg_mpf_coreg")
+
+		line="$subj_id,T${tp}"
+		while read -r label dice jaccard; do
+			line+=",$dice,$jaccard"
+		done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
+
+		echo "$line" >> "$OUTPUT_FILE"
 	
-	if [[ -d "$mpf_dir" ]]; then
-
-		aseg1="$mprage_dir/mri/aparc+aseg.mgz"
-		aseg2="$mpf_dir/mri/aparc+aseg.mgz"
-
-		if [[ -f "$aseg1" && -f "$aseg2" ]]; then
-			echo "Running mri_seg_overlap for $subj_id"
-
-			# Run mri_seg_overlap and capture output
-			overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2")
-			
-			line="$subj_id"
-
-			while read -r label dice jaccard; do
-				line+=",$dice,$jaccard"
-			done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
-
-			echo "$line" >> "$OUTPUT_FILE"
-		else
-			echo "Skipping $subj_id (missing aparc+aseg.mgz)"
-		fi
 	else
-		echo "No MPFcor directory for $subj_id - skipping"
+		echo "Missing input for overlap: $subj_id T$tp"
 	fi
+}
+
+# Loop to calculate overlap
+for tp in 1 2; do
+	for mprage in "$SUBJECTS_DIR"/H??-"$tp"_mprage1_freesurfer; do
+		subj_id=$(basename "$mprage" | sed 's/-${tp}_mprage1_freesurfer//')
+		echo "subj_id" $subj_id
+		calculate_overlap "$subj_id" "$tp"
+	done
 done
 
-echo "Finished. Table saved to $OUTPUT_FILE"	
+

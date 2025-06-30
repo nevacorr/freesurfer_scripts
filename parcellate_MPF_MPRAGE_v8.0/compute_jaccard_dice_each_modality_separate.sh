@@ -6,6 +6,8 @@
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 OUTPUT_FILE="within_modality_overlap_summary.csv"
+TMP_DIR="./tmp_coreg"
+mkdir -p "$TMP_DIR"
 
 # Find a valid subject pair to extract list of label names
 
@@ -31,8 +33,8 @@ for label in "${LABELS[@]}"; do
 done
 echo "$header" > "$OUTPUT_FILE"
 
-# Function to compare two freesurfer outputs
-compare_pair() {
+# Function to coregister aparc+aseg.mgz from two separate sessions of same subject
+coregister_pair() {
 
 	echo "##########################Running new subject ############################"
 	local subj_id=$1
@@ -45,9 +47,8 @@ compare_pair() {
 	rawavg1="$dir1/mri/rawavg.mgz"
 	rawavg2="$dir2/mri/rawavg.mgz"
 
-	# Temporary aligned aseg
-        regfile="${SUBJECTS_DIR}/tmp_${subj_id}_${modality}_reg.lta"
-	aseg2_coreg="${SUBJECTS_DIR}/tmp_${subj_id}_${modality}_aseg2_coreg.mgz"
+        regfile="${TMP_DIR}/${subj_id}_${modality}_reg.lta"
+	aseg2_coreg="${TMP_DIR}/tmp_${subj_id}_${modality}_aseg2_coreg.mgz"
 
 	echo "aseg1" "$aseg1"
 	echo "aseg2" "$aseg2"
@@ -67,17 +68,6 @@ compare_pair() {
 			    --o "$aseg2_coreg" \
 			    --interp nearest
 
-		echo "Comparing $modality for $subj_id"
-		overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2_coreg")
-
-		line="$subj_id,$modality"
-		while read -r label dice jaccard; do
-			line+=",$dice,$jaccard"
-		done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
-
-		echo "$line" >> "$OUTPUT_FILE"
-
-#		rm -f "$aseg1_coreg" "$aseg2_coreg" 
 	else
 		echo "Skipping $subj_id (missing aseg or rawavg)"
 	fi
@@ -89,9 +79,9 @@ for mprage1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
 	echo "subj_id" $subj_id
 	mprage2="$SUBJECTS_DIR/${subj_id}-2_mprage1_freesurfer"
 	if [[ -d "$mprage1" && -d "$mprage2" ]]; then
-		compare_pair "$subj_id" "MPRAGE" "$mprage1" "$mprage2"
+		coregister_pair "$subj_id" "MPRAGE" "$mprage1" "$mprage2"
 	else
-		echo Cannot compare $subj_id $mprage1 $mprage2
+		echo Cannot coregister $subj_id $mprage1 $mprage2
 	fi        
 done
 
@@ -101,8 +91,48 @@ for mpf1 in "$SUBJECTS_DIR"/H??-1_MPFcor_freesurfer; do
 	mpf2="$SUBJECTS_DIR/${subj_id}-2_MPFcor_freesurfer"
 
 	if [[ -d "$mpf1" && -d "$mpf2" ]]; then
-		compare_pair "$subj_id" "MPFcor" "$mpf1" "$mpf2"
+		coregister_pair "$subj_id" "MPFcor" "$mpf1" "$mpf2"
 	fi        
 done
 
+# Function to calcualte overlap between parcellations and compute DICE and Jaccard coefficients
+
+calculate_overlap() {
+
+	local subj_id=$1
+	local modality=$2
+	local dir1=$3
+
+	aseg1="$dir1/mri/aparc+aseg.mgz"
+	aseg2_coreg="${TMP_DIR}/tmp_${subj_id}_${modality}_aseg2_coreg.mgz"
+
+	if [[ -f "$aseg1" && -f "$aseg2_coreg" ]]; then
+		echo "Calculating Dice/Jaccard for $modality $subj_id"
+
+		overlap_output=$(mri_seg_overlap --measures dice jaccard "$aseg1" "$aseg2_coreg")
+
+		line="$subj_id,$modality"
+		while read -r label dice jaccard; do
+			line+=",$dice,$jaccard"
+		done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
+
+		echo "$line" >> "$OUTPUT_FILE"
+	
+	else
+		echo "Missing input for $subj_id $modality"
+	fi
+}
+
+# Loop over all subjects and calculate overlap for MPRAGE scans
+for mprage1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
+	subj_id=$(basename "$mprage1" | sed 's/-1_mprage1_freesurfer//')
+	echo "subj_id" $subj_id
+	calculate_overlap "$subj_id" "MPRAGE" "$mprage1" 
+done
+
+# Loop over all subjects and calculate overlap for MPF scans
+for mpf1 in "$SUBJECTS_DIR"/H??-1_MPFcor_freesurfer; do
+	subj_id=$(basename "$mpf1" | sed 's/-1_MPFcor_freesurfer//')
+	calculate_overlap "$subj_id" "MPFcor" "$mpf1" 
+done
 

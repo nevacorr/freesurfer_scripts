@@ -2,7 +2,7 @@
 
 # Compare within-modality scans (MPRAGE-MPRAGE and MPF-MPF) using Dice and Jaccard similarity coefficients 
 
-# Usage: bash compute_jaccard_dice_each_modality_separate.sh
+# Usage: nohup bash compute_jaccard_dice_each_modality_separate.sh >compute_jaccard.log 2>&1 &
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 OUTPUT_FILE="within_modality_overlap_summary.csv"
@@ -63,7 +63,7 @@ coregister_pair() {
 
 		# Apply tranform to aseg2 to resampel into rawavg1 space	
 		mri_vol2vol --mov "$aseg2" \
-			    --targ "$rawavg1" \
+			    --targ "$aseg1" \
 			    --reg "$regfile" \
 			    --o "$aseg2_coreg" \
 			    --interp nearest

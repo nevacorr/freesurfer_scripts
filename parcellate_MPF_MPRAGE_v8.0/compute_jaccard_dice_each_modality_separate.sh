@@ -6,11 +6,11 @@
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 OUTPUT_FILE="within_modality_overlap_summary.csv"
+NEW_OUTPUT_FILE="within_modality_overlap_summary_new.csv"
 TMP_DIR="./tmp_coreg"
 mkdir -p "$TMP_DIR"
 
 # Find a valid subject pair to extract list of label names
-
 for dir1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
 
 	subj_id=$(basename "$dir1" | sed 's/-1_mprage1_freesurfer//')
@@ -31,7 +31,7 @@ header="SubjectID,Modality"
 for label in "${LABELS[@]}"; do 
 	header+=",DICE_$label,JACCARD_$label"
 done
-echo "$header" > "$OUTPUT_FILE"
+echo "$header" > "$NEW_OUTPUT_FILE"
 
 # Function to coregister aparc+aseg.mgz from two separate sessions of same subject
 coregister_pair() {
@@ -73,29 +73,13 @@ coregister_pair() {
 	fi
 }
 
-# Loop over all subjects and compare MPRAGE scans
-for mprage1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
-	subj_id=$(basename "$mprage1" | sed 's/-1_mprage1_freesurfer//')
-	echo "subj_id" $subj_id
-	mprage2="$SUBJECTS_DIR/${subj_id}-2_mprage1_freesurfer"
-	if [[ -d "$mprage1" && -d "$mprage2" ]]; then
-		coregister_pair "$subj_id" "MPRAGE" "$mprage1" "$mprage2"
-	else
-		echo Cannot coregister $subj_id $mprage1 $mprage2
-	fi        
-done
+check_subject_line_exists() {
+	local subject=$1
+	local modality=$2
+	grep -q "^${subject},${modality}," "$OUTPUT_FILE"
+}
 
-# Loop over all subjects and compare MPF scans
-for mpf1 in "$SUBJECTS_DIR"/H??-1_MPFcor_freesurfer; do
-	subj_id=$(basename "$mpf1" | sed 's/-1_MPFcor_freesurfer//')
-	mpf2="$SUBJECTS_DIR/${subj_id}-2_MPFcor_freesurfer"
-
-	if [[ -d "$mpf1" && -d "$mpf2" ]]; then
-		coregister_pair "$subj_id" "MPFcor" "$mpf1" "$mpf2"
-	fi        
-done
-
-# Function to calcualte overlap between parcellations and compute DICE and Jaccard coefficients
+# Function to calculate overlap between parcellations and compute DICE and Jaccard coefficients
 
 calculate_overlap() {
 
@@ -116,23 +100,49 @@ calculate_overlap() {
 			line+=",$dice,$jaccard"
 		done < <(echo "$overlap_output" | awk 'NR>1 {print $2, $3, $4}')
 
-		echo "$line" >> "$OUTPUT_FILE"
+		echo "$line" >> "$NEW_OUTPUT_FILE"
 	
 	else
 		echo "Missing input for $subj_id $modality"
 	fi
 }
 
-# Loop over all subjects and calculate overlap for MPRAGE scans
+# Loop over all subjects and compare MPRAGE scans
 for mprage1 in "$SUBJECTS_DIR"/H??-1_mprage1_freesurfer; do
 	subj_id=$(basename "$mprage1" | sed 's/-1_mprage1_freesurfer//')
+
+	# Skip if subject line exists in old output file
+	if check_subject_line_exists "$subj_id" "MPRAGE"; then
+		echo "Skipping $subj_id: results already exist."
+		continue
+	fi
+
 	echo "subj_id" $subj_id
-	calculate_overlap "$subj_id" "MPRAGE" "$mprage1" 
+	mprage2="$SUBJECTS_DIR/${subj_id}-2_mprage1_freesurfer"
+	if [[ -d "$mprage1" && -d "$mprage2" ]]; then
+		coregister_pair "$subj_id" "MPRAGE" "$mprage1" "$mprage2"
+		calculate_overlap "$subj_id" "MPRAGE" "$mprage1" 
+	else
+		echo Cannot coregister $subj_id $mprage1 $mprage2
+	fi        
 done
 
-# Loop over all subjects and calculate overlap for MPF scans
+# Loop over all subjects and compare MPF scans
 for mpf1 in "$SUBJECTS_DIR"/H??-1_MPFcor_freesurfer; do
 	subj_id=$(basename "$mpf1" | sed 's/-1_MPFcor_freesurfer//')
-	calculate_overlap "$subj_id" "MPFcor" "$mpf1" 
+	
+	# Skip if subject line exists in old output file
+	if check_subject_line_exists "$subj_id" "MPFcor"; then
+		echo "Skipping $subj_id: results already exist."
+		continue
+	fi
+
+	mpf2="$SUBJECTS_DIR/${subj_id}-2_MPFcor_freesurfer"
+
+	if [[ -d "$mpf1" && -d "$mpf2" ]]; then
+		coregister_pair "$subj_id" "MPFcor" "$mpf1" "$mpf2"
+		calculate_overlap "$subj_id" "MPFcor" "$mpf1" 
+	fi        
 done
+
 

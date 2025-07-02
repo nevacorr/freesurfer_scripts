@@ -2,7 +2,7 @@
 
 # Compare within-modality scans (MPRAGE-MPRAGE and MPF-MPF) using Dice and Jaccard similarity coefficients 
 
-# Usage: nohup bash compute_jaccard_dice_each_modality_separate.sh > compute_jaccard_mprage_mpf.log 2>&1 &
+# Usage: nohup bash compute_jaccard_dice_mprage_mpf.sh > compute_jaccard_mprage_mpf.log 2>&1 &
 
 export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 OUTPUT_FILE="mprage_mpf_overlap_summary.csv"
@@ -25,7 +25,7 @@ coregister_pair() {
 	local rawavg_mprage="$mprage_dir/mri/rawavg.mgz"
 	local rawavg_mpf="$mpf_dir/mri/rawavg.mgz"
 
-       local regfile="${TMP_DIR}/${subj_id}_tp${tp}_mpf2mprage.lta"
+        local regfile="${TMP_DIR}/${subj_id}_tp${tp}_mpf2mprage.lta"
 	local aseg_mpf_coreg="${TMP_DIR}/${subj_id}_tp${tp}_aseg_mpf_coreg.mgz"
 	local rawvg_mprage_stripped="${TMP_DIR}/${subj_id}_tp${tp}_mprage_rawavg_stripped.mgz"
 

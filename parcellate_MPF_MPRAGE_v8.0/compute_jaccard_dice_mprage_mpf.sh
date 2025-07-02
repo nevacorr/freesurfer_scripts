@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Compare within-modality scans (MPRAGE-MPRAGE and MPF-MPF) using Dice and Jaccard similarity coefficients 
+# Compare across-modality scans (MPRAGE-MPF) using Dice and Jaccard similarity coefficients 
 
 # Usage: nohup bash compute_jaccard_dice_mprage_mpf.sh > compute_jaccard_mprage_mpf.log 2>&1 &
 

@@ -2,4 +2,9 @@
 parcellate_MPF_MPRAGE_v8.0/SEG_REPRO/
 parcellate_MPF_MPRAGE_v8.0/*.txt
 parcellate_MPF_MPRAGE_v8.0/freesurfer_output
+parcellate_MPF_MPRAGE_v8.0/*/
 *.nii
+*.log
+*.txt
+*.csv
+*.tar

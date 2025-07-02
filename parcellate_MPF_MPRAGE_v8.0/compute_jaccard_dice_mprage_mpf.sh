@@ -27,10 +27,14 @@ coregister_pair() {
 
         local regfile="${TMP_DIR}/${subj_id}_tp${tp}_mpf2mprage.lta"
 	local aseg_mpf_coreg="${TMP_DIR}/${subj_id}_tp${tp}_aseg_mpf_coreg.mgz"
-	local rawvg_mprage_stripped="${TMP_DIR}/${subj_id}_tp${tp}_mprage_rawavg_stripped.mgz"
+	local rawavg_mprage_stripped="${TMP_DIR}/${subj_id}_tp${tp}_mprage_rawavg_stripped.mgz"
 
 	if [[ -f "$aseg_mprage" && -f "$aseg_mpf" && -f "$rawavg_mprage" && -f "$rawavg_mpf" ]]; then
 		echo "Registering MPF to MPRAGE for $subj_id "
+
+		echo $rawavg_mprage
+		echo $mprage_dir/mri/brainmask.mgz
+		echo $rawavg_mprage_stripped
 
 		mri_mask "$rawavg_mprage" "$mprage_dir/mri/brainmask.mgz" "$rawavg_mprage_stripped"
 

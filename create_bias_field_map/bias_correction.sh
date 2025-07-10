@@ -19,8 +19,6 @@ echo "Output directory: $OUTPUT_DIR"
 
 mkdir -p "$OUTPUT_DIR"
 
-# Convert image for Analyze format to NIFTI
-
 # Extract input filename and path
 INPUT_DIR=$(dirname "$INPUT_BASENAME")
 FILENAME=$(basename "$INPUT_BASENAME")

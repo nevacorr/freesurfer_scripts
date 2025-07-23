@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Usage: this program must be called from run_all.sh. If it is run on the command line, a subject argument must be provided.
+
 SUBJECT=$1
 SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output/
 LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks

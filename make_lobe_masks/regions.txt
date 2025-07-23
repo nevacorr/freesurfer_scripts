@@ -1,0 +1,8 @@
+cerebrum_gm_bilat
+cerebrum_gm_left
+cerebrum_gm_right
+cerebrum_wm_bilat
+cerebrum_wm_left
+cerebrum_wm_right
+subcort_left
+subcort_right

@@ -6,3 +6,4 @@ cerebrum_wm_left
 cerebrum_wm_right
 subcort_left
 subcort_right
+subcort_bilat

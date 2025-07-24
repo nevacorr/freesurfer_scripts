@@ -52,7 +52,7 @@ for mpf_dir in "$INPUT_DIR"/H??-?_MPFcor_freesurfer; do
 		mri_segstats --seg "$mask" --in "$coreg_mgz" --excludeid 0 --sum "$temp_stats" > /dev/null 2>&1
 
 		# Extract mean MPF
-		vol=$(awk '$1 ==1 {print $5}' "$temp_stats")
+		vol=$(awk '$1 ==1 {print $6}' "$temp_stats")
 		rm -f "$temp_stats" "$coreg_mgz"
 
 		if [[ -z "$vol" ]]; then vol="NA"; fi

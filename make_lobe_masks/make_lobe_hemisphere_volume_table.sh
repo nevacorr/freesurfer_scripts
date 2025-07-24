@@ -39,7 +39,7 @@ while IFS= read -r subj || [[ -n "$subj" ]]; do
 		if [[ -f "$mask" ]]; then
 			temp_stats=$(mktemp)
 			mri_segstats --seg "$mask" --excludeid 0 --sum "$temp_stats" >/dev/null 2>&1
-			vol=$(awk '$1 == 1 {print $4}' "$temp_stats")
+			vol=$(awk '$1 == 1 {print $3}' "$temp_stats")
 			rm -f "$temp_stats"
 		else
 			vol="NA"

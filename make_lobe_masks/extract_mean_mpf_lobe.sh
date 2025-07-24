@@ -44,12 +44,16 @@ for mpf_dir in "$INPUT_DIR"/H??-?_MPFcor_freesurfer; do
 	for region in "${REGION_NAMES[@]}"; do
 		mask="$MASKS_DIR/$subj/${region}.mgz"
 		coreg_mgz="${TEMP_DIR}/${subj}_${region}_mpf_in_maskspace.mgz"
+		coreg_mgz_binary="${TEMP_DIR}/${subj}_${region}_mpf_in_maskspace_binary.mgz"
 
 		# Tranform MPF to mask space
 		mri_vol2vol --mov "$orig_mpf_file" --targ "$mask" --lta "$lta_file" --o "$coreg_mgz" --interp trilinear	
 
+		# Make a binary mask of the MPF 001.mgz image that is in wmparc space
+		mri_binarize --i "$coreg_mgz" --min 200 --o "$coreg_mgz_binary"
+
 		temp_stats=$(mktemp)
-		mri_segstats --seg "$mask" --in "$coreg_mgz" --excludeid 0 --sum "$temp_stats" > /dev/null 2>&1
+		mri_segstats --seg "$mask" --in "$coreg_mgz" --excludeid 0 --mask "$coreg_mgz_binary" --sum "$temp_stats" > /dev/null 2>&1
 
 		# Extract mean MPF
 		vol=$(awk '$1 ==1 {print $6}' "$temp_stats")

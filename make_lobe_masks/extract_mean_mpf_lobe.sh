@@ -6,7 +6,7 @@ INPUT_DIR="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output"
 MASKS_DIR="combined_masks"
 OUTPUT_FILE="avg_MPF_values_in_all_regions.tsv"
 TEMP_DIR="./temp_mpf_stats"
-REGIONS_LIST="regions.txt"
+REGIONS_LIST="allregions.txt"
 
 mkdir -p "$TEMP_DIR"
 

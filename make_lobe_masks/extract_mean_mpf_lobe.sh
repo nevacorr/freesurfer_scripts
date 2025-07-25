@@ -57,7 +57,7 @@ for mpf_dir in "$INPUT_DIR"/H??-?_MPFcor_freesurfer; do
 
 		# Extract mean MPF
 		vol=$(awk '$1 ==1 {print $6}' "$temp_stats")
-		rm -f "$temp_stats" "$coreg_mgz"
+		rm -f "$temp_stats" "$coreg_mgz" "$coreg_mgz_binary"
 
 		if [[ -z "$vol" ]]; then vol="NA"; fi
 

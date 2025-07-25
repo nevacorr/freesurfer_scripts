@@ -4,12 +4,11 @@
 # those produced by aparcstats2table and asegstats2table because those functions take into account partial volume effects
 # or corrections. There may also be small gaps or extra voxels at the border that are not included in those functions.
 # For subcortical regions, I find that the difference between my program here and the output of asegstats2table is about 2.5%.
-# I prefer to sum the values to those tables than use the values calculated here.
 
 SUBJECTS_DIR="/home/toddr/neva/MPF/make_lobe_masks/combined_masks"
 SUBJECTS_LIST="subjects_list.txt"
-REGIONS_LIST="regions.txt"
-OUTPUT="lobe_and_hemi_volumes_table.tsv"
+REGIONS_LIST="allregions.txt"
+OUTPUT="lobe_and_hemisphere_volumes_table.tsv"
 
 mapfile -t REGION_NAMES < "$REGIONS_LIST"
 

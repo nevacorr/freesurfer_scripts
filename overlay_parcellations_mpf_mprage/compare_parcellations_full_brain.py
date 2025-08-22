@@ -9,11 +9,8 @@ multi_diff_file = os.path.join(output_dir, 'all_regions_diff.mgz')
 lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
 exclude_keywords = ['unknown', 'wm-', 'unused', 'long', 'short', 'part', 'granular', 'layer']
 
-subcortical_label_nums = [10, 11, 12, 13]
-#subcortical_label_nums = [10, 11, 12, 13, 49, 50, 51, 52]
-cortical_ranges = []
-
-#cortical_ranges = [(1000, 1999), (2000, 2999)]
+subcortical_label_nums = [10, 11, 12, 13, 49, 50, 51, 52]
+cortical_ranges = [(1000,1036), (2000,2036)]
 
 label_dict = {}
 with open(lut_file) as f:

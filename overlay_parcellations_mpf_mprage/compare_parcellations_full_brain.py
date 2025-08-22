@@ -9,7 +9,10 @@ multi_diff_file = os.path.join(output_dir, 'all_regions_diff.mgz')
 
 lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
 label_dict = {}
-include_keywords = ['ctx-', 'Caudate', 'Putamen', 'Pallidum', 'Thalamus']
+subcortical_keywords = ['Caudate', 'Putamen', 'Pallidum', 'Thalamus']
+exclude_keywords = ['unknown', 'wm-', 'unused', 'long', 'short', 'part', 'granular', 'layer']
+
+cortical_ranges = [(1000, 1999), (2000, 2999)]
 
 with open(lut_file) as f:
 	for line in f:
@@ -18,9 +21,15 @@ with open(lut_file) as f:
 		parts = line.strip().split()
 		label_num = int(parts[0])
 		label_name = parts[1]
-		if any(keyword in label_name for keyword in include_keywords):
-			label_dict[label_num] = label_name
 
+		if any(ex in label_name for ex in exclude_keywords):
+			continue
+
+		in_cortical_range = any(start <= label_num <= end for (start,end) in cortical_ranges)
+		is_subcortical = any(k in label_name for k in subcortical_keywords)
+
+		if in_cortical_range or is_subcortical:
+			label_dict[label_num] = label_name
 
 # Load parcellations
 

@@ -1,10 +1,21 @@
+import sys
 import os
 import nibabel as nib
 import numpy as np
 
-output_dir = 'diff_regions/H05-2/'
+if len(sys.argv) !=3:
+	print("Usage: python compare_parcellations_full_brain.py <mprage_img> <mpf_img>")
+	sys.exit(1)
+
+mprage_path = sys.argv[1]
+mpf_path = sys.argv[2]
+
+output_dir = 'diff_regions/'
 os.makedirs(output_dir, exist_ok=True)
-multi_diff_file = os.path.join(output_dir, 'all_regions_diff.mgz')
+
+mprage_name = os.path.basename(mprage_path).replace('.mgz', '')
+mpf_name = os.path.basename(mpf_path).replace('.mgz', '')
+output_file = os.path.join(output_dir, f'diff_{mprage_name}_vs_{mpf_name}.mgz')
 
 lut_file = os.path.join(os.environ['FREESURFER_HOME'], 'FreeSurferColorLUT.txt')
 exclude_keywords = ['unknown', 'wm-', 'unused', 'long', 'short', 'part', 'granular', 'layer']
@@ -33,8 +44,8 @@ with open(lut_file) as f:
 
 # Load parcellations
 
-img1 = nib.load('H05-2_mprage1_freesurfer/mri/aparc+aseg.mgz')
-img2 = nib.load('output/H05-2_MPFcor_aparc+aseg_reg_to_mprage.mgz')
+img1 = nib.load(mprage_path)
+img2 = nib.load(mpf_path)
 data1 = img1.get_fdata().astype(np.int32)
 data2 = img2.get_fdata().astype(np.int32)
 
@@ -48,23 +59,26 @@ for label_num, region_name in label_dict.items():
 	
 	mask1 = (data1 == label_num)
 	mask2 = (data2 == label_num)
-	diff_mask = np.logical_xor(mask1, mask2)
+
+	# Voxels present in MPRAGE only are colored green
+	only_mprage = mask1 & ~mask2
+	diff_volume[only_mprage] = 1
+
+
+	# Voxels present in MPF only are colored red 
+	only_mpf = mask2 & ~mask1
+	diff_volume[only_mpf] = 2
 
 	voxels_img1 = mask1.sum()
 	voxels_img2 = mask2.sum()
-	voxels_diff = diff_mask.sum()
+	voxels_diff = np.logical_xor(mask1, mask2).sum()
 	
-	if voxels_diff > 0:
-		diff_volume[diff_mask] = label_num
+	print(f'{region_name}: numvox_mprage={voxels_img1} numvox_mpf={voxels_img2}, num differing voxels={voxels_diff}')
 
-	print(f'{region_name}: numvox_img1={voxels_img1} numvox_img2={voxels_img2}, num differing voxels={voxels_diff}')
-
-# Make a new header
-new_header  = img1.header.copy()
+# Save as .mgz
+new_header = img1.header.copy()
 new_header.set_data_dtype(np.int16)
-
 out_img = nib.MGHImage(diff_volume, img1.affine, header=new_header)
-out_img.to_filename(multi_diff_file)
-
-print(f'multiregion diff file saved')
+out_img.to_filename(output_file)
+print(f'Saved output file {output_file}')
 

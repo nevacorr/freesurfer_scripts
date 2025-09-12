@@ -13,9 +13,9 @@ mpf_path = sys.argv[2]
 output_dir = 'diff_regions/'
 os.makedirs(output_dir, exist_ok=True)
 
-mprage_name = os.path.basename(mprage_path).replace('.mgz', '')
+mprage_path_safe = mprage_path.replace('/', '_').replace('\\', '_')
 mpf_name = os.path.basename(mpf_path).replace('.mgz', '')
-output_file = os.path.join(output_dir, f'diff_{mprage_name}_vs_{mpf_name}.mgz')
+output_file = os.path.join(output_dir, f'diff_{mprage_path_safe}_vs_{mpf_name}.mgz')
 
 # Load parcellations
 img1 = nib.load(mprage_path)
@@ -81,9 +81,12 @@ counts_file_name = os.path.join(
 # Write counts to file
 with open(counts_file_name, 'w') as f:
 	f.write("Category\tVoxel Count\n")
+	total_voxels = 0
 	for code, desc in categories.items():
 		n_voxels = np.sum(diff_volume == code)
+		total_voxels += n_voxels
 		f.write(f"{desc}\t{n_voxels}\n")
+	f.write(f"Total\t{total_voxels}\n")
 
 # Save as diff_volume as .mgz
 new_header = img1.header.copy()

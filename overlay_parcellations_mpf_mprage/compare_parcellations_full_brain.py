@@ -43,15 +43,27 @@ with open(lut_file) as f:
 			label_dict[label_num] = label_name
 
 # Load parcellations
-
 img1 = nib.load(mprage_path)
 img2 = nib.load(mpf_path)
 data1 = img1.get_fdata().astype(np.int32)
 data2 = img2.get_fdata().astype(np.int32)
 
+# Initialize diff volume
 diff_volume = np.zeros(data1.shape, dtype=np.int16)
 
-# Loop over labels and compute XOR
+# Voxels in image 1 parcellation but not in or with different label in image 2 parcellation
+image1_only = (data1 != 0) & (data2 != data1)
+diff_volume[image1_only] = 1
+
+# Voxels in image 2 parcellation but not in or with different label in image 1 parcellation
+image2_only = (data2 != 0) & (data2 != data1)
+diff_volume[image2_only] = 2
+
+# Voxels in both parcellations but assigned to different parcels
+different_label = (data1 != 0) & (data2 != 0) & (data1 != data2)
+diff_volume[image3_only] = 3
+
+# Compute differences
 for label_num, region_name in label_dict.items():
 
 	if label_num == 0:
@@ -59,16 +71,6 @@ for label_num, region_name in label_dict.items():
 	
 	mask1 = (data1 == label_num)
 	mask2 = (data2 == label_num)
-
-	# Voxels present in MPRAGE only are colored green
-	only_mprage = mask1 & ~mask2
-	diff_volume[only_mprage] = 1
-
-
-	# Voxels present in MPF only are colored red 
-	only_mpf = mask2 & ~mask1
-	diff_volume[only_mpf] = 2
-
 	voxels_img1 = mask1.sum()
 	voxels_img2 = mask2.sum()
 	voxels_diff = np.logical_xor(mask1, mask2).sum()

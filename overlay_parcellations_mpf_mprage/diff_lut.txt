@@ -1,5 +1,6 @@
 # ID 	Label 		R 	G 	B	A	
 0 	background 	0	0	0	255      
-1	MPRAGE_only 	0	255	0	255
-2	MPFcor_only	0	0	255	255
-3	label_change	255	0	255	255 	
+1	GM_in_MPRAGE_to_WM_in_MPF 	0	255	0	255
+2	WM_in_MPRAGE_to_GM_in_MPF	0	0	255	255
+3	CSF_in_MPRAGE_to_GM/WM_in_MPF	255	0	255	255 	
+4	GM/WM_in_MPRAGE_to_CSF_in_MPF	255	255	0	255 	

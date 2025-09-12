@@ -61,7 +61,7 @@ diff_volume[image2_only] = 2
 
 # Voxels in both parcellations but assigned to different parcels
 different_label = (data1 != 0) & (data2 != 0) & (data1 != data2)
-diff_volume[image3_only] = 3
+diff_volume[different_label] = 3
 
 # Compute differences
 for label_num, region_name in label_dict.items():

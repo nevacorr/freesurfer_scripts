@@ -1,5 +1,5 @@
-
-# ID 	Labe_Name 	R 	G 	B
-0 	background 	0	0	0
-1	MPRAGE_only 	0	255	0
-2	MPFcor_only	255	0	0
+# ID 	Label 		R 	G 	B	A	
+0 	background 	0	0	0	255      
+1	MPRAGE_only 	0	255	0	255
+2	MPFcor_only	0	0	255	255
+3	label_change	255	0	255	255 	

@@ -2,6 +2,7 @@ import sys
 import os
 import nibabel as nib
 import numpy as np
+import pandas as pd
 
 if len(sys.argv) !=3:
 	print("Usage: python compare_parcellations_full_brain.py <mprage_img> <mpf_img>")
@@ -96,4 +97,12 @@ out_img.to_filename(output_file)
 
 print(f'Saved output files {output_file} and {counts_file_name}')
 
+confusion = np.zeros((4,4), dtype=int) #rows = MPRAGE cols = MPF
+for i in range(4): # 0=ignore 1=WM 2=GM 3=CSF
+	for j in range(4):
+		confusion[i,j] = np.sum((class1 == i) & (class2 == j))
 
+labels = ['ignore/other', 'WM', 'GM', 'CSF']
+confusion_df = pd.DataFrame(confusion, index=[f"MPRAGE-{l}" for l in labels],
+					columns=[f"MPF-{l}" for l in labels])
+print(confusion_df)

@@ -5,3 +5,9 @@ parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 *.log
 *.csv
 *.tar
+*.mat
+*.txt
+*.hdr
+*.img`
+*.nii
+*.nii.gz

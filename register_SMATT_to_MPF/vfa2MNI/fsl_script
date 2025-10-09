@@ -1,2 +1,0 @@
-fslmaths H05-2/MPFcor -bin H05-2/MPFcor_mask
-fslmaths H05-2/VFA2 -mas H05-2/MPFcor_mask H05-2/VFA2_skull_stripped

@@ -31,43 +31,35 @@ fslorient -setqform "${qform_array[@]}" nii_files/${BASE}_flipped.nii.gz
 fslorient -setsformcode 1 nii_files/${BASE}_flipped.nii.gz
 fslorient -setqformcode 1 nii_files/${BASE}_flipped.nii.gz
 
-# Skull strip VFA volume
-antsBrainExtraction.sh \
- -d 3 \
- -a nii_files/${BASE}_flipped.nii.gz \
- -e MNI152_T1_1mm.nii.gz \
- -m MNI152_T1_1mm_brain.nii.gz \ 
- -o nii_files/${BASE}
-
 #Bias correct MPF map
-N4BiasFieldCorrection -d 3 -i nii_files/${BASE}_BrainExtractionBrain.nii.gz -o nii_files/${BASE}_N4.nii.gz	
+N4BiasFieldCorrection -d 3 -i nii_files/${BASE}_flipped.nii.gz -o nii_files/${BASE}_N4.nii.gz	
 
-# Register FA map to MPF
-FIXED=files_from_vasily/MNI152_T1_1mm_brain-better-aligned.nii.gz
-MOVING=nii_files/${BASE}_N4.nii.gz
-OUT=${BASE}_2_mniadj_
-
-antsRegistration \
- --dimensionality 3 \
- --float 0 \
- --output [${OUT},${OUT}Warped.nii.gz] \
- --interpolation Linear \
- --winsorize-image-intensities [0.005, 0.995] \
- --use-histogram-matching 1 \
- --initial-moving-transform [${FIXED},${MOVING},1] \
- --transform Rigid[0.1] \
-   --metric Mattes[${FIXED},${MOVING},1,32,Regular,0.25] \
-   --convergence [1000x500x250x0,1e-6,10] \
-   --shrink-factors 8x4x2x1 \
-   --smoothing-sigmas 3x2x1x0vox \
- --transform Affine[0.1] \
-   --metric Mattes[${FIXED},${MOVING},1,32,Regular,0.25] \
-   --convergence [100x70x50x20,1e-6,10] \
-   --shrink-factors 8x4x2x1 \
-   --smoothing-sigmas 3x2x1x0vox \
- --transform SyN[0.1,3,0] \
-   --metric Mattes[${FIXED},${MOVING},1,32] \
-   --convergence [100x70x50x20,1e-6,10] \
-   --shrink-factors 8x4x2x1 \
-   --smoothing-sigmas 3x2x1x0vox
-
+## Register FA map to MPF
+#FIXED=files_from_vasily/MNI152_T1_1mm_brain-better-aligned.nii.gz
+#MOVING=nii_files/${BASE}_N4.nii.gz
+#OUT=${BASE}_2_mniadj_
+#
+#antsRegistration \
+# --dimensionality 3 \
+# --float 0 \
+# --output [${OUT},${OUT}Warped.nii.gz] \
+# --interpolation Linear \
+# --winsorize-image-intensities [0.005, 0.995] \
+# --use-histogram-matching 1 \
+# --initial-moving-transform [${FIXED},${MOVING},1] \
+# --transform Rigid[0.1] \
+#   --metric Mattes[${FIXED},${MOVING},1,32,Regular,0.25] \
+#   --convergence [1000x500x250x0,1e-6,10] \
+#   --shrink-factors 8x4x2x1 \
+#   --smoothing-sigmas 3x2x1x0vox \
+# --transform Affine[0.1] \
+#   --metric Mattes[${FIXED},${MOVING},1,32,Regular,0.25] \
+#   --convergence [100x70x50x20,1e-6,10] \
+#   --shrink-factors 8x4x2x1 \
+#   --smoothing-sigmas 3x2x1x0vox \
+# --transform SyN[0.1,3,0] \
+#   --metric Mattes[${FIXED},${MOVING},1,32] \
+#   --convergence [100x70x50x20,1e-6,10] \
+#   --shrink-factors 8x4x2x1 \
+#   --smoothing-sigmas 3x2x1x0vox
+#

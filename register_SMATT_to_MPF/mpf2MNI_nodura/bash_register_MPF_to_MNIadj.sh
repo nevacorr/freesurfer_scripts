@@ -16,7 +16,8 @@ FIXED=files_from_vasily/MNI152_T1_1mm_brain-better-aligned.nii.gz
 OUT_ROOT=SEG_REPRO_reg_to_MNIadj
 
 # Input base folder
-INPUT_ROOT=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/SEG_REPRO
+#INPUT_ROOT=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/SEG_REPRO
+INPUT_ROOT=/home/toddr/neva/MPF/register_SMATT_to_MPF/mpf2MNI_nodura/SEG_REPRO_reg
 
 # Find all the H* subfolders
 for H_FOLDER in "$INPUT_ROOT"/H*; do

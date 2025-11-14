@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# This script loops through all FreeSurfer output directories for MPF data, registers each subject's original MPF volume (001.mgz) to their rawavg.mgz
+# using mri_robust_register, applies the resulting tranform to align the MPF volume to the subject's aparc+aseg segmentation and then uses mri_segstats
+# to extract mean MPF values for all cortical and subcortical parcels. 
+# Note: We register the original MPF volume (001.mgz) to rawavg.mgz because FreeSurfer's anatomical segmentation (aparc+aseg.mgz) is defined in the 
+# rawavg space. This MPF image is acquired in its own native space, so the two volumes are not aligned by default. By registering the MPF to the rawavg
+# and then applying this tranform to map the MPF into aparc+aseg space, we ensure that each MPF voxels corresponds to the correct anatomical label
+# when computing parcel-wise MPF statistics. 
+
+# Outputs: 
+#	- for each sbuject: a *_mpf_segstats.txt file containing parcel-wise MPF stats. 
+	- temporary LTA tranforms and coregistered MPF volumes are stored in TEMP_DIR.
+
 # Usage: extract_mean_mpf.sh
 
 INPUT_DIR="freesurfer_output"

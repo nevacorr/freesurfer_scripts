@@ -19,9 +19,9 @@ $ That script must be run first so that these file exist in TEMP_DIR
           This file is located in directory OUTPUT_DIR.
         - Temporary mask volumes stored in TEMP_DIR.
 
-INPUT_DIR="freesurfer_output"
-OUTPUT_DIR="avg_MPF_values_in_parcels_minthresh200"
-TEMP_DIR="./temp_asegstats_files"
+INPUT_DIR="newrecon_reg_to_PD/freesurfer_output"
+OUTPUT_DIR="avg_MPF_values_in_parcels_minthresh200_newrecon"
+TEMP_DIR="./temp_asegstats_files_newrecon"
 CTAB="$FREESURFER_HOME/FreeSurferColorLUT.txt"
 
 mkdir -p "$OUTPUT_DIR"

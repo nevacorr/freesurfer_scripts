@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: bash extract_mean_mpf_mprage_wmparc.sh
+# Usage: nohup bash extract_mean_mpf_mprage_wmparc.sh > output.log 2>&1 &
 
 # This script computes mean MPF values for each region in 1. wmparc.mgz from the fs parcellation of the MPF, while excluding all MPF voxels with
 # values below 200 and 2) wmparc.mgz from the fs parcellation of the MPRAGE, while excluding all MPF voxels with values below 200
@@ -12,13 +12,18 @@ FS_DIR_MPRAGE="freesurfer_output" 	          # directory with mprage fs processe
 OUTPUT_DIR="avg_MPF_reg_values"	  		  # directory to write output mean MPF stats file to
 TEMP_DIR="./temp_wmparc_files_MPF_reg" 		  # directory to write intermediate files to 
 CTAB="$FREESURFER_HOME/FreeSurferColorLUT.txt"    # file with region names used by mrisegstats
-output_file_mpf="$OUTPUT_DIR/allsubjects_mpf_wmsegstats_masked200.txt"   #  name and path of output stats file for MPF parcellation
-output_file_mprage="$OUTPUT_DIR/allsubjects_mprage_wmsegstats_masked200.txt"   #  name and path of output stats file for MPRAGE parcellation
+
+mean_mpf_mpfparc="$OUTPUT_DIR/allsubjects_mpf_mean_mpfparc.csv"   #  name and path of output mean MPF file for MPF parcellation
+sd_mpf_mpfparc="$OUTPUT_DIR/allsubjects_mpf_stdev_mpfparc.csv"   #  name and path of output std MPF file for MPF parcellation
+mean_mpf_mprageparc="$OUTPUT_DIR/allsubjects_mpf_mean_mprageparc.csv"   #  name and path of output mean MPF file for MPRAGE parcellation
+sd_mpf_mprageparc="$OUTPUT_DIR/allsubjects_mpf_stdev_mprageparc.csv"   #  name and path of output std MPF file for MPRAGE parcellation
 
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$TEMP_DIR"
-echo "" > "$output_file_mpf" #create output file for MPF parcellation
-echo "" > "$output_file_mprage" #create output file for MPRAGE parcellation
+
+# Flags to write headers only once
+header_written_mpf=false
+header_written_mprage=false
 
 # Loop over all mpf directories
 for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every directory with MPF reg data
@@ -63,10 +68,21 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 
 		# Calculate mean MPF value in each gm and wm parcel using MPF parcellation
 		mri_segstats --seg "$wmseg_file_mpf" --in "$coreg_mgz_mpf" --mask "$coreg_mgz_binary_mpf" --ctab "$CTAB" --sum tmp_mpf.txt
-		
-		# Append results to file with all subject data
-		echo "Subject $subj_id" >> "$output_file_mpf"
-		cat tmp_mpf.txt >> "$output_file_mpf"
+
+
+		# Extract headers and values
+		if ! $header_written_mpf; then
+			headers=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%s", $5}' tmp_mpf.txt)
+			echo "Subject$headers" > "$mean_mpf_mpfparc"
+			echo "Subject$headers" > "$sd_mpf_mpfparc"
+			header_written_mpf=true
+		fi
+
+		mean_vals=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%.4f",$6}' tmp_mpf.txt)
+		std_vals=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%.4f",$7}' tmp_mpf.txt)
+
+		echo "$subj_id$mean_vals" >>"$mean_mpf_mpfparc"
+		echo "$subj_id$std_vals" >> "$sd_mpf_mpfparc"
 
 	else
 		echo "Skipping $subj_id for MPF parcellation (missing wmparc.mgz for MPF)"
@@ -98,9 +114,20 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 		# Calculate mean MPF value in each gm and wm parcel using MPRAGE parcellation
 		mri_segstats --seg "$wmseg_file_mprage" --in "$coreg_mgz_mprage" --mask "$coreg_mgz_binary_mprage" --ctab "$CTAB" --sum tmp_mprage.txt
 		
-		# Append results to file with all subject data
-		echo "Subject $subj_id" >> "$output_file_mprage"
-		cat tmp_mprage.txt >> "$output_file_mprage"
+		# Extract headers and values
+		if ! $header_written_mprage; then
+			headers=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%s", $5}' tmp_mprage.txt)
+			echo "Subject$headers" > "$mean_mpf_mprageparc"
+			echo "Subject$headers" > "$sd_mpf_mprageparc"
+			header_written_mprage=true
+		fi
+
+		mean_vals=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%.4f",$6}' tmp_mprage.txt)
+		std_vals=$(awk 'NR>1 && $0 !~ /^#/ {printf ",%.4f",$7}' tmp_mprage.txt)
+
+		echo "$subj_id$mean_vals" >>"$mean_mpf_mprageparc"
+		echo "$subj_id$std_vals" >> "$sd_mpf_mprageparc"
+
 
 	else
 		echo "Skipping $subj_id calculation for MPRAGE parcellation (missing wmparc.mgz for MPRAGE)"

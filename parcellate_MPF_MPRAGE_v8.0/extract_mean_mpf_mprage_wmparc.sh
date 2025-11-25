@@ -2,111 +2,87 @@
 
 # Usage: bash extract_mean_mpf_mprage_wmparc.sh
 
-FS_DIR_MPF="newrecon_reg_to_PD/freesurfer_output"
-FS_DIR_MPRAGE="freesurfer_outupt"
-OUTPUT_DIR="avg_MPF_values_in_MPRAGE_parcels"
-MPF_REG_TO_FS_MPRAGE_DIR="./temp_wmparc_files_MPF_reg"
-CTAB="$FREESURFER_HOME/FreeSurferColorLUT.txt"
+# This script computes mean MPF values for each region in 1. wmparc.mgz from the fs parcellation of the MPF, while excluding all MPF voxels with
+# values below 200 and 2) wmparc.mgz from the fs parcellation of the MPRAGE, while excluding all MPF voxels with values below 200
+
+set -e #stop on errors
+
+FS_DIR_MPF="newrecon_reg_to_PD/freesurfer_output" # directory with new mpf all PD reg fs processed output
+FS_DIR_MPRAGE="freesurfer_output" 	          # directory with mprage fs processed output
+OUTPUT_DIR="avg_MPF_reg_values"	  		  # directory to write output mean MPF stats file to
+TEMP_DIR="./temp_wmparc_files_MPF_reg" 		  # directory to write intermediate files to 
+CTAB="$FREESURFER_HOME/FreeSurferColorLUT.txt"    # file with region names used by mrisegstats
 
 mkdir -p "$OUTPUT_DIR"
 mkdir -p "$TEMP_DIR"
 
 # Loop over all mpf directories
-for mpf_top_dir in "$FS_DIR_MPF"/H??-?_MPFcor_freesurfer; do
+for mpf_top_dir in "$FS_DIR_MPF"/H??-?_MPFcor_freesurfer; do    # for every directory with MPF reg data
 
-	subj_id=$(basename #$mpf_top_dir" | sed 's/_reg_MPFcor_freesurfer//')
-	mprage_top_dir="${FS_DIR_MPRAGE}/${subj_id}_mprage1_freesurfer"
+	subj_id=$(basename "$mpf_top_dir" | sed 's/_reg_MPFcor_freesurfer//')  # extract subject ID
+	mprage_top_dir="${FS_DIR_MPRAGE}/${subj_id}_mprage1_freesurfer"        # find MPRAGE fs processed output for this subject
 
-	subj_scan=$(basename "$mpf_top_dir")
-	mpf_dir="$mpf_top_dir/mri"
-	wmseg_file="$mri_dir/wmparc.mgz"
-	rawavg_file="$mri_dir/rawavg.mgz"
-	orig_mpf_file="$mri_dir/orig/001.mgz"
+	subj_scan=$(basename "$mpf_top_dir")  		# full path to subjects MPF fs output 
+	mpf_dir="$mpf_top_dir/mri"            		# path to mri directory in subject's MPF fs output
+	mprage_dir="$mprage_top_dir/mri"      		# path to mri directory in subject's MPRAGE fs output
+	wmseg_file_mpf="$mpf_dir/wmparc.mgz"      	# full path to wmparc.mgz seg file from MPF fs output
+	wmseg_file_mprage="$mprage_dir/wmparc.mgz"     	# full path to wmparc.mgz seg file from MPRAGE fs output
+	rawavg_file_mpf="$mpf_dir/rawavg.mgz"     	# full path to rawavg.mgz file from MPF fs output
+	rawavg_file_mprage="$mprage_dir/rawavg.mgz"    	# full path to rawavg.mgz file from MPRAGE fs output
+	orig_mpf_file="$mpf_dir/orig/001.mgz" 		# full path to 001.mgz file from MPF fs output
 
-	if [[ -f "$wmseg_file" && -f "$orig_mpf_file" ]]; then
-		echo "Processing $subj_scan"
+	echo "Processing $subj_id"
 
-		echo $wmseg_file
-		echo $orig_mpf_file
+	# Use MPF parcellation
+	if [[ -f "$wmseg_file_mpf" ]]; then
+		echo " -> Registering to MPF space"
 
-		output_file="$OUTPUT_DIR/${subj_scan}_mpf_wmsegstats_masked200.txt"
-		lta_file="${TEMP_DIR}/${subj_scan}_mpf2rawavg.lta"
-		coreg_mgz="${TEMP_DIR}/${subj_scan}_001_in_aparcaseg.mgz"	
-		coreg_mgz_binary="${TEMP_DIR}/${subj_scan}_001_in_aparcaseg_mask.mgz"	
+		output_file_mpf="$OUTPUT_DIR/${subj_id}_mpf_wmsegstats_masked200.txt"   # define name and path of output stats file
+		lta_file_mpf="${TEMP_DIR}/${subj_id}_mpf2mpf_rawavg.lta"	      # location of transform of mpf 001 to rawavg for MPF
+		coreg_mgz_mpf="${TEMP_DIR}/${subj_id}_001_in_mpf_wmparc.mgz"          # location of MPF 001 in MPF wmparc space	
+		coreg_mgz_binary_mpf="${TEMP_DIR}/${subj_id}_001_in_mpf_wmparc_mask.mgz" # location of mask where MPF 001 in mpf wmparc space has values >200	
 
-		# Make a binary mask of the MPF 001.mgz image that is in aparc+aseg space
-		mri_binarize --i "$coreg_mgz" --min 200 --o "$coreg_mgz_binary"
+		# Register original MPF volume with rawavg.mgz for MPF
+		mri_robust_register --mov "$orig_mpf_file" --dst "$rawavg_file_mpf" --lta "$lta_file_mpf" --satit --iscale
 
-		# Calculate parcel statistics
-		mri_segstats --seg "$wmseg_file" --in "$coreg_mgz" --mask "$coreg_mgz_binary" \
-			--ctab "$CTAB" --sum "$output_file"
+		# Use this transform to register original MPF with MPF wmparc.mgz
+		mri_vol2vol --mov "$orig_mpf_file" --targ "$wmseg_file_mpf" --lta "$lta_file_mpf" --o "$coreg_mgz_mpf" --interp trilinear
+		
+		# Make a binary mask of the MPF 001.mgz image that is in MPF wmparc space
+		mri_binarize --i "$coreg_mgz_mpf" --min 200 --o "$coreg_mgz_binary_mpf"  
 
+		# Calculate mean MPF value in each gm and wm parcel using MPF parcellation
+		mri_segstats --seg "$wmseg_file_mpf" --in "$coreg_mgz_mpf" --mask "$coreg_mgz_binary_mpf" --ctab "$CTAB" --sum "$output_file_mpf"
 	else
-		echo "Skipping $subj_scan (missing wmparc.mgz or 001.mgz)"
+		echo "Skipping $subj_id (missing wmparc.mgz for MPF)"
+	fi
+		
+
+	if [[ -f "$wmseg_file_mprage" ]]; then
+		echo " -> Registering to MPRAGE space"
+
+		output_file_mprage="$OUTPUT_DIR/${subj_id}_mpf2mprage_wmsegstats_masked200.txt"   # define name and path of output stats file
+		lta_file_mprage="${TEMP_DIR}/${subj_id}_mpf2mprage_rawavg.lta"        # location of transform of mpf 001 to rawavg for MPF
+		coreg_mgz_mprage="${TEMP_DIR}/${subj_id}_001_in_mprage_wmparc.mgz"    # location of MPF 001 in MPRAGE wmparc space	
+		coreg_mgz_binary_mprage="${TEMP_DIR}/${subj_id}_001_in_mprage_wmparc_mask.mgz" # location of mask where MPF 001 in mprage wmparc space has values >200	
+
+		# Register original MPF volume with rawavg.mgz for MPRAGE
+		mri_robust_register --mov "$orig_mpf_file" --dst "$rawavg_file_mprage" --lta "$lta_file_mprage" --satit --iscale
+
+		# Use this transform to register original MPF with MPRAGE wmparc.mgz
+		mri_vol2vol --mov "$orig_mpf_file" --targ "$wmseg_file_mprage" --lta "$lta_file_mprage" --o "$coreg_mgz_mprage" --interp trilinear
+
+		# Make a binary mask of the MPF 001.mgz image that is in MPRAGE wmparc space
+		mri_binarize --i "$coreg_mgz_mprage" --min 200 --o "$coreg_mgz_binary_mprage" 
+
+		# Calculate mean MPF value in each gm and wm parcel using MPRAGE parcellation
+		mri_segstats --seg "$wmseg_file_mprage" --in "$coreg_mgz_mprage" --mask "$coreg_mgz_binary_mprage" --ctab "$CTAB" --sum "$output_file_mprage"
+	else
+		echo "Skipping $subj_id (missing wmparc.mgz for MPRAGE)"
 
 	fi
 done
 
 echo "Calculations complete. All results are saved in $OUTPUT_DIR"
-#!/bin/bash
 
-# Usage: bash extract_mean_mpf_mprage_wmparc.sh
 
-# This script computes mean MPF values for each region in wmparc.mgz, while excluding all MPF voxels with
-# values below 200. 
-# It requires the coregistered MPF volumes produced by extract_mean_mpf.sh: 
-# 	H??-?_MPFcor_freesurfer_001_in_aparcaseg.mgz  calculated by extract_mean_mpf.sh. 
-$ That script must be run first so that these file exist in TEMP_DIR
-
-# Workflow:
-	1. For each subjects MPF FreeSurfer output directory, locate the wmparc.mgz segmentation
-	   and the coregistered MPF volume in aparc+aseg space.
-        2. Create a binary mask keeping only MPF voxels >= 200 in value.
-        3. Use mri_segstats to compute parcel-wise mean MPF values, applying the binary mask to exclude
-	   low-value voxels. 
-# Outputs: 
-	- One *_mpf_wmegstats_masked200.txt file per subject containing masked parcel-wise MPF statistics.
-          This file is located in directory OUTPUT_DIR.
-        - Temporary mask volumes stored in TEMP_DIR.
-
-INPUT_DIR="newrecon_reg_to_PD/freesurfer_output"
-OUTPUT_DIR="avg_MPF_values_in_parcels_minthresh200_newrecon"
-TEMP_DIR="./temp_asegstats_files_newrecon"
-CTAB="$FREESURFER_HOME/FreeSurferColorLUT.txt"
-
-mkdir -p "$OUTPUT_DIR"
-mkdir -p "$TEMP_DIR"
-
-# Loop over all mpf directories
-for mpf_dir in "$INPUT_DIR"/H??-?_MPFcor_freesurfer; do
-	subj_scan=$(basename "$mpf_dir")
-	mri_dir="$mpf_dir/mri"
-	wmseg_file="$mri_dir/wmparc.mgz"
-	rawavg_file="$mri_dir/rawavg.mgz"
-	orig_mpf_file="$mri_dir/orig/001.mgz"
-
-	if [[ -f "$wmseg_file" && -f "$orig_mpf_file" ]]; then
-		echo "Processing $subj_scan"
-
-		echo $wmseg_file
-		echo $orig_mpf_file
-
-		output_file="$OUTPUT_DIR/${subj_scan}_mpf_wmsegstats_masked200.txt"
-		lta_file="${TEMP_DIR}/${subj_scan}_mpf2rawavg.lta"
-		coreg_mgz="${TEMP_DIR}/${subj_scan}_001_in_aparcaseg.mgz"	
-		coreg_mgz_binary="${TEMP_DIR}/${subj_scan}_001_in_aparcaseg_mask.mgz"	
-
-		# Make a binary mask of the MPF 001.mgz image that is in aparc+aseg space
-		mri_binarize --i "$coreg_mgz" --min 200 --o "$coreg_mgz_binary"
-
-		# Calculate parcel statistics
-		mri_segstats --seg "$wmseg_file" --in "$coreg_mgz" --mask "$coreg_mgz_binary" \
-			--ctab "$CTAB" --sum "$output_file"
-
-	else
-		echo "Skipping $subj_scan (missing wmparc.mgz or 001.mgz)"
-
-	fi
-done
-
-echo "Calculations complete. All results are saved in $OUTPUT_DIR"

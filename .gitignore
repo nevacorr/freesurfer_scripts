@@ -11,3 +11,5 @@ parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 *.img`
 *.nii
 *.nii.gz
+parcellate_MPF_MPRAGE_v8.0/extract_mean_mpf_wmparc.sh
+parcellate_MPF_MPRAGE_v8.0/extract_mean_mpf.sh

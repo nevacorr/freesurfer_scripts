@@ -27,8 +27,7 @@ header_written_mpf=false
 header_written_mprage=false
 
 # Loop over all mpf directories
-for mpf_top_dir in "$FS_DIR_MPF"/H02-1_reg_MPFcor_freesurfer; do    # for every directory with MPF reg data
-#for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every directory with MPF reg data
+for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every directory with MPF reg data
 
 	subj_id=$(basename "$mpf_top_dir" | sed 's/_reg_MPFcor_freesurfer//')  # extract subject ID
 	mprage_top_dir="${FS_DIR_MPRAGE}/${subj_id}_mprage1_freesurfer"        # find MPRAGE fs processed output for this subject

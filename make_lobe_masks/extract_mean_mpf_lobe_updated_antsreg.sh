@@ -7,7 +7,7 @@
 # generated after registering component images), while excluding all MPF voxels with
 # values below 200 and 2) wmparc.mgz from the fs parcellation of the MPRAGE, while excluding all MPF voxels with values below 200
 
-#set -e #stop on errors
+set -e #stop on errors
 
 FS_DIR_MPF="newrecon_reg_to_PD/freesurfer_output" # directory with new mpf all PD reg fs processed output
 FS_DIR_MPRAGE="freesurfer_output" 	          # directory with mprage fs processed output
@@ -118,14 +118,14 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 		fi
 
 		mean_vals=""
-		std_vals=""
+		sd_vals=""
 
 		# Calculate mean MPF value in each region
 		while read -r region; do 
 			region_mask="$MASKS_DIR/$subj_id/${region}.mgz"
 
 			if [[ ! -f "$region_mask" ]]; then
-				mean_val+=",NA"
+				mean_vals+=",NA"
 				sd_vals+=",NA"
 				continue
 			fi
@@ -145,7 +145,7 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 		done < "$REGIONS_LIST"	
 	
 		echo "$subj_id$mean_vals" >>"$mean_mpf_mpfreg"
-		echo "$subj_id$std_vals" >> "$sd_mpf_mpfreg"
+		echo "$subj_id$sd_vals" >> "$sd_mpf_mpfreg"
 
 	else
 		echo "Skipping $subj_id for MPF parcellation (missing wmparc.mgz for MPF)"
@@ -212,7 +212,7 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 
 		# Extract headers and values
 		if ! $header_written_mprage; then
-			headers=$(awk '{printf ",%s", $1} END {print "")' "$REGIONS_LIST") 
+			headers=$(awk '{printf ",%s", $1} END {print ""}' "$REGIONS_LIST") 
 			echo "Subject$headers" > "$mean_mpf_mprage"
 			echo "Subject$headers" > "$sd_mpf_mprage"
 			header_written_mprage=true
@@ -226,7 +226,7 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 
 			if [[ ! -f "$region_mask" ]]; then
 				mean_vals+=",NA"
-				sed_vals+=",NA"
+				sd_vals+=",NA"
 				continue
 			fi
 
@@ -237,7 +237,7 @@ for mpf_top_dir in "$FS_DIR_MPF"/H??-?_reg_MPFcor_freesurfer; do    # for every 
 			stats=$(mri_stats --mask "$tmp_mask" --i "$coreg_mgz_mprage" --mean --std 2>/dev/null)
 
 			mean=$(echo "$stats" | awk '{print $1}')
-			sd=$(echo "$stats" | awk '{print $2)')
+			sd=$(echo "$stats" | awk '{print $2}')
 
 			mean_vals+=",$mean"
 			sd_vals+=",$sd"

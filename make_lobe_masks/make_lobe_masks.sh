@@ -3,12 +3,14 @@
 # Usage: this program must be called from run_all.sh. If it is run on the command line, a subject argument must be provided.
 
 SUBJECT=$1
+#SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output/
 SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output/
-LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks
+LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks_Feb2026
+#LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks
 ROILIST_DIR=./lobe_roi_lists
 
 if [ -z "$1" ]; then
-	echo "Error: subject argumetn not provided"
+	echo "Error: subject argument not provided"
 	exit 1
 fi
 

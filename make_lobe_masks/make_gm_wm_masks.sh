@@ -2,7 +2,8 @@
 
 # Usage bash make_gm_wm_masks.sh
 
-SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output/
+SUBJECTS_DIR_ORIG=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
+SUBJECTS_DIR_MPF_REG=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output
 LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks
 LABEL_DIR=/home/toddr/neva/MPF/make_lobe_masks/lobe_roi_lists
 
@@ -20,17 +21,24 @@ while read -r SUBJECT; do
 
 	echo "Processing subject: $SUBJECT"
 
+	#Determine SUBJECTS_DIR based on SUBJECT
+	if [ -d "$SUBJECTS_DIR_ORIG/$SUBJECT" ]; then
+		SUBJECTS_DIR_CURRENT="$SUBJECTS_DIR_ORIG"
+	elif [ -d "$SUBJECTS_DIR_MPF_REG/$SUBJECT" ]; then
+		SUBJECTS_DIR_CURRENT="$SUBJECTS_DIR_MPF_REG"
+	fi
+
 	mkdir -p "$LOBE_MASK_DIR/$SUBJECT"
 
 	# Make gray matter masks from ribbon
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_gm_left.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/ribbon.mgz" --match 3 --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/ribbon.mgz" --match 3 --o "$out_mask"
 
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_gm_right.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/ribbon.mgz" --match 42 --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/ribbon.mgz" --match 42 --o "$out_mask"
 
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_gm_bilat.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/ribbon.mgz" --match 3 42 --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/ribbon.mgz" --match 3 42 --o "$out_mask"
 
 	# Make white matter masks using label numbers from file
 
@@ -39,20 +47,20 @@ while read -r SUBJECT; do
 		matches+=(--match "$label")
 	done	
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_wm_left.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
 
 	matches=()
 	for label in "${wm_rh_labels[@]}"; do
 		matches+=(--match "$label")
 	done	
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_wm_right.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
 
 	matches=()
 	for label in "${wm_bilat_labels[@]}"; do
 		matches+=(--match "$label")
 	done	
 	out_mask="$LOBE_MASK_DIR/$SUBJECT/cerebrum_wm_bilat.mgz"
-	mri_binarize --i "$SUBJECTS_DIR/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
+	mri_binarize --i "$SUBJECTS_DIR_CURRENT/$SUBJECT/mri/wmparc.mgz" "${matches[@]}" --o "$out_mask"
 
-done <subjects_list.txt
+done <subjects_list_all.txt

@@ -4,7 +4,7 @@
 
 SUBJECTS_DIR_ORIG=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 SUBJECTS_DIR_MPF_REG=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output
-LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks
+LOBE_MASK_DIR=/home/toddr/neva/MPF/make_lobe_masks/combined_masks_Feb2026
 LABEL_DIR=/home/toddr/neva/MPF/make_lobe_masks/lobe_roi_lists
 
 # Read wm labels

@@ -1,14 +1,16 @@
 #!/bin/bash
 
-# Make sure to run conda activate ants prior to running
 # Usage: nohup bash extract_mean_mpf_lobe_updated_antsreg.sh > output.log 2>&1 &
+#        or bash extract_mean_mpf_lobe_updated_antsreg.sh 2>&1 | tee output.log
 
 # This script computes mean MPF values for each region in wmparc.mgz from 1) the fs parcellation of the MPF (volumes
 # generated after registering component images), while excluding all MPF voxels with
 # values below 200 and 2) wmparc.mgz from the fs parcellation of the MPRAGE, while excluding all MPF voxels with values below 200
 # and 3) the wmparc.mgz from the fs parcellation of the MPF where the component images were not registered prior to MPF reconstruction
 
-set -e #stop on errors
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate ants
+which antRegistration
 
 FS_DIR_MPF="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output"
 FS_DIR_MPF_REG="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output" # directory with new mpf all PD reg fs processed output

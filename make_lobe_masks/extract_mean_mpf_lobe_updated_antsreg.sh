@@ -32,7 +32,8 @@ sd_mpf_mprage="$OUTPUT_DIR/allsubjects_mpf_sd_mpragespace.csv"
 
 #Loop over all subject directories
 
-for space in mpf mpf_reg mprage; do
+for space in mpf; do
+#for space in mpf mpf_reg mprage; do
 
 	if [[ "$space" == "mpf" ]]; then
 		fs_dir="$FS_DIR_MPF"
@@ -50,7 +51,7 @@ for space in mpf mpf_reg mprage; do
 		fs_dir="$FS_DIR_MPRAGE"
 		suffix="_mprage1_freesurfer"
 		mean_output="$mean_mpf_mprage"
-		sd_output="$sd_mpf_mpf_mprage"
+		sd_output="$sd_mpf_mprage"
 	fi
 	
 	pattern="$fs_dir/H??-?${suffix}"
@@ -67,7 +68,15 @@ for space in mpf mpf_reg mprage; do
 		mri_dir="$subject_top_dir/mri"
 		wmseg_file="$mri_dir/wmparc.mgz"      	# full path to wmparc.mgz seg file from fs output
 		brain_fs_file="$mri_dir/brain.mgz"     	# full path to brain.mgz file from fs output
-		orig_mpf_file="$FS_DIR_MPF_REG/${subj_id}_reg_MPFcor_freesurfer/mri/orig/001.mgz"   # path to MPF reg file
+
+		if [[ "$space" == "mpf" ]]; then
+			orig_mpf_file="$FS_DIR_MPF/${subj_id}_MPFcor_freesurfer/mri/orig/001.mgz"   # path to MPF reg file
+		elif [[ "$space" == "mpf_reg" ]]; then
+			orig_mpf_file="$FS_DIR_MPF_REG/${subj_id}_reg_MPFcor_freesurfer/mri/orig/001.mgz"   # path to MPF reg file
+		elif [[ "$space" == "mprage" ]]; then
+			orig_mpf_file="$FS_DIR_MPF_REG/${subj_id}_reg_MPFcor_freesurfer/mri/orig/001.mgz"   # path to MPF reg file
+
+		fi
 
 		echo ""
 		echo "---------------------"
@@ -187,6 +196,9 @@ for space in mpf mpf_reg mprage; do
 				rm -f "$temp_stats"
 		
 			done < "$REGIONS_LIST"	
+
+			echo "Writing to sd_output: '$sd_output'"
+			echo "$subj_id$sd_vals: '$subj_id$sd_vals'"
 	
 			echo "$subj_id$mean_vals" >>"$mean_output"
 			echo "$subj_id$sd_vals" >> "$sd_output"

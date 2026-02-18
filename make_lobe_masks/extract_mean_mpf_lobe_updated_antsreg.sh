@@ -1,16 +1,16 @@
-#!/bin/bash
+#!/bin/bash 
 
 # Usage: nohup bash extract_mean_mpf_lobe_updated_antsreg.sh > output.log 2>&1 &
 #        or bash extract_mean_mpf_lobe_updated_antsreg.sh 2>&1 | tee output.log
 
-# This script computes mean MPF values for each region in wmparc.mgz from 1) the fs parcellation of the MPF (volumes
+# This script computes mean MPF values for each custom lobe region from 1) the fs parcellation of the MPF (volumes
 # generated after registering component images), while excluding all MPF voxels with
 # values below 200 and 2) wmparc.mgz from the fs parcellation of the MPRAGE, while excluding all MPF voxels with values below 200
-# and 3) the wmparc.mgz from the fs parcellation of the MPF where the component images were not registered prior to MPF reconstruction
+# and 3) the wmparc.mgz from the fs parcellation of the MPF where the component images were not registered prior to MPF reconstruction, again excluding all MPF voels with values below 200
 
 source ~/miniconda3/etc/profile.d/conda.sh
 conda activate ants
-which antRegistration
+which antsRegistration
 
 FS_DIR_MPF="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output"
 FS_DIR_MPF_REG="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output" # directory with new mpf all PD reg fs processed output
@@ -18,7 +18,7 @@ FS_DIR_MPRAGE="/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/freesurfer_output
 MASKS_DIR="combined_masks_Feb2026"
 REGIONS_LIST="allregions.txt"
 
-OUTPUT_DIR="avg_MPF_custom_region_values_Feb2026" # directory to write output mean MPF stats file to
+OUTPUT_DIR="avg_MPF_custom_region_values_Feb2026" # directory to write output mean MPF stats file to 
 TEMP_DIR="./temp_custom_region_files" 		  # directory to write intermediate files to 
 
 mkdir -p "$OUTPUT_DIR" "$TEMP_DIR"
@@ -71,6 +71,8 @@ for space in mpf mpf_reg mprage; do
 
 		echo ""
 		echo "---------------------"
+		
+		########### TAKE RAW MPF FROM MPF_REG SPACE AND PUT IN THE SPACE THAT PARCELLATION WAS DONE IN (MPF, MPF_REG OR MPRAGE) ####### 
 		echo "Processing $subj_id in $space space"
 
 		if [[ -f "$wmseg_file" ]]; then
@@ -80,8 +82,8 @@ for space in mpf mpf_reg mprage; do
 
 			coreg_nii="${prefix}_001_in_wmparc.nii.gz"             # location of 001 in wmparc space	
 			coreg_nii_binary="${prefix}_001_in_wmparc_mask.nii.gz" # location of mask where 001 in wmparc space has values >200	
-			coreg_mgz="${prefix}_001_in_wmparc.mgz"                # location of 001 in wmparc space	
-			coreg_mgz_binary="${prefix}_001_in_wmparc_mask.mgz"    # location of mask where 001 in wmparc space has values >200	
+			coreg_mgz="${prefix}_001_in_${space}_wmparc.mgz"                # location of 001 in wmparc space	
+			coreg_mgz_binary="${prefix}_001_in_${space}_wmparc_mask.mgz"    # location of mask where 001 in wmparc space has values >200	
 
 			if [[ ! -f "$coreg_mgz_binary" ]]; then
 
@@ -126,6 +128,10 @@ for space in mpf mpf_reg mprage; do
 				echo "Check transformed output file"
 				ls -lh "$coreg_nii"
 
+				rm -f "$mpf_nii" "$brain_nii"
+
+		########### TAKE THIS MPF IMAGE REGISTERED TO WMPARC SPACE AND MAKE A MASK WHERE VALUES >=200 ARE 1 ############
+
 				# Make a binary mask of the MPF 001.mgz image that is in wmparc space
 				mri_binarize --i "$coreg_nii" --min 200 --o "$coreg_nii_binary"  
 
@@ -136,6 +142,7 @@ for space in mpf mpf_reg mprage; do
 				echo " -_-------> Registration and masking for MPF already done, skipping"
 			fi
 
+		########### CALCULATE MEAN AND SD OF MPF VAL IN EACH REGION  MASK AND WRITE TO FILE  ############
 
 			# Extract headers and values
 			if [[ ! -f "$mean_output" ]]; then
@@ -149,6 +156,7 @@ for space in mpf mpf_reg mprage; do
 
 			# Calculate mean MPF value in each region
 			while read -r region; do 
+				echo "region ${region}"
 				region_mask="$MASKS_DIR/$subj_id${suffix}/${region}.mgz"
 
 				if [[ ! -f "$region_mask" ]]; then
@@ -158,16 +166,25 @@ for space in mpf mpf_reg mprage; do
 				fi
 			
 
-				tmp_mask="${prefix}_${region}_mask.mgz"
-				mri_and "$region_mask" "$coreg_mgz_binary" "$tmp_mask"
+			        temp_stats="${prefix}_${region}_stats.txt"
 
-				stats=$(mri_stats --mask "$tmp_mask" --i "$coreg_mgz" --mean --std 2>/dev/null)
+				mri_segstats --seg "$region_mask" --in "$coreg_mgz" --excludeid 0 --mask "$coreg_mgz_binary" --sum "$temp_stats" > /dev/null 2>&1
 
-				mean=$(echo "$stats" | awk '{print $1}')
-				sd=$(echo "$stats" | awk '{print $2}')
+				mean=$(awk '$1 ==1 {print $6}' "$temp_stats")
+				sd=$(awk '$1 ==1 {print $7}' "$temp_stats")
+
+				# Fail if mean or sd is empty or not a number
+    				if ! [[ "$mean" =~ ^[0-9.+-eE]+$ ]] || ! [[ "$sd" =~ ^[0-9.+-eE]+$ ]]; then
+        				echo "ERROR: Failed to calculate mean or SD for subject $subj_id, region $region"
+        				echo "Stats file contents:"
+					cat "$temp_stats"
+        				exit 1
+			    	fi
 
 				mean_vals+=",$mean"
 				sd_vals+=",$sd"
+
+				rm -f "$temp_stats"
 		
 			done < "$REGIONS_LIST"	
 	

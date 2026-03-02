@@ -5,10 +5,10 @@
 # or corrections. There may also be small gaps or extra voxels at the border that are not included in those functions.
 # For subcortical regions, I find that the difference between my program here and the output of asegstats2table is about 2.5%.
 
-SUBJECTS_DIR="/home/toddr/neva/MPF/make_lobe_masks/combined_masks"
-SUBJECTS_LIST="subjects_list.txt"
+SUBJECTS_DIR="/home/toddr/neva/MPF/make_lobe_masks/combined_masks_Feb2026"
+SUBJECTS_LIST="subjects_list_all.txt"
 REGIONS_LIST="allregions.txt"
-OUTPUT="lobe_and_hemisphere_volumes_table.tsv"
+OUTPUT="lobe_and_hemisphere_volumes_table_mpf_mpfreg_mprage.tsv"
 
 mapfile -t REGION_NAMES < "$REGIONS_LIST"
 

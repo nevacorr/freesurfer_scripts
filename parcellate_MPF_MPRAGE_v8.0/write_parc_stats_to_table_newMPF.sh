@@ -1,0 +1,15 @@
+#!/bin/bash
+
+export SUBJECTS_DIR=/home/toddr/neva/MPF/parcellate_MPF_MPRAGE_v8.0/newrecon_reg_to_PD/freesurfer_output
+ 
+cd $SUBJECTS_DIR
+
+# Write cortical stats to file
+
+aparcstats2table --hemi lh --meas volume  --tablefile mpfreg_left_hem_volumes.txt --subjects H02-1_reg_MPFcor_freesurfer H02-2_reg_MPFcor_freesurfer H03-1_reg_MPFcor_freesurfer H03-2_reg_MPFcor_freesurfer H04-1_reg_MPFcor_freesurfer H04-2_reg_MPFcor_freesurfer H05-1_reg_MPFcor_freesurfer H05-2_reg_MPFcor_freesurfer H06-1_reg_MPFcor_freesurfer H06-2_reg_MPFcor_freesurfer H07-1_reg_MPFcor_freesurfer H07-2_reg_MPFcor_freesurfer H08-1_reg_MPFcor_freesurfer H08-2_reg_MPFcor_freesurfer H10-1_reg_MPFcor_freesurfer H10-2_reg_MPFcor_freesurfer H13-1_reg_MPFcor_freesurfer H13-2_reg_MPFcor_freesurfer H14-1_reg_MPFcor_freesurfer H14-2_reg_MPFcor_freesurfer H15-1_reg_MPFcor_freesurfer H15-2_reg_MPFcor_freesurfer
+
+aparcstats2table --hemi rh --meas volume  --tablefile mpfreg_right_hem_volumes.txt --subjects H02-1_reg_MPFcor_freesurfer H02-2_reg_MPFcor_freesurfer H03-1_reg_MPFcor_freesurfer H03-2_reg_MPFcor_freesurfer H04-1_reg_MPFcor_freesurfer H04-2_reg_MPFcor_freesurfer H05-1_reg_MPFcor_freesurfer H05-2_reg_MPFcor_freesurfer H06-1_reg_MPFcor_freesurfer H06-2_reg_MPFcor_freesurfer H07-1_reg_MPFcor_freesurfer H07-2_reg_MPFcor_freesurfer H08-1_reg_MPFcor_freesurfer H08-2_reg_MPFcor_freesurfer H10-1_reg_MPFcor_freesurfer H10-2_reg_MPFcor_freesurfer H13-1_reg_MPFcor_freesurfer H13-2_reg_MPFcor_freesurfer H14-1_reg_MPFcor_freesurfer H14-2_reg_MPFcor_freesurfer H15-1_reg_MPFcor_freesurfer H15-2_reg_MPFcor_freesurfer
+
+# Write subcortical stats to file
+
+asegstats2table --meas volume  --tablefile mpfreg_subcort_volumes.txt --subjects H02-1_reg_MPFcor_freesurfer H02-2_reg_MPFcor_freesurfer H03-1_reg_MPFcor_freesurfer H03-2_reg_MPFcor_freesurfer H04-1_reg_MPFcor_freesurfer H04-2_reg_MPFcor_freesurfer H05-1_reg_MPFcor_freesurfer H05-2_reg_MPFcor_freesurfer H06-1_reg_MPFcor_freesurfer H06-2_reg_MPFcor_freesurfer H07-1_reg_MPFcor_freesurfer H07-2_reg_MPFcor_freesurfer H08-1_reg_MPFcor_freesurfer H08-2_reg_MPFcor_freesurfer H10-1_reg_MPFcor_freesurfer H10-2_reg_MPFcor_freesurfer H13-1_reg_MPFcor_freesurfer H13-2_reg_MPFcor_freesurfer H14-1_reg_MPFcor_freesurfer H14-2_reg_MPFcor_freesurfer H15-1_reg_MPFcor_freesurfer H15-2_reg_MPFcor_freesurfer

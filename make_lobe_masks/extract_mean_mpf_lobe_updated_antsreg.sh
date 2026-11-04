@@ -32,8 +32,7 @@ sd_mpf_mprage="$OUTPUT_DIR/allsubjects_mpf_sd_mpragespace.csv"
 
 #Loop over all subject directories
 
-for space in mpf; do
-#for space in mpf mpf_reg mprage; do
+for space in mpf mpf_reg mprage; do
 
 	if [[ "$space" == "mpf" ]]; then
 		fs_dir="$FS_DIR_MPF"

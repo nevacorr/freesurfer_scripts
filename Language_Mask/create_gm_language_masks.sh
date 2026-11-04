@@ -31,12 +31,14 @@ BROCA_TRIANGULARIS=$(get_label_id "ctx-lh-parstriangularis")
 # Destrieux labels
 LATERAL_STG=$(get_label_id "ctx_lh_G_temp_sup-Lateral")
 TRANSVERSE_TEMPORAL=$(get_label_id "ctx_lh_G_temp_sup-G_T_transv")
+PLANUM_TEMPORALE=$(get_label_id "ctx_lh_G_temp_sup-Plan_tempo")
 
 echo "Using FreeSurfer labels:"
 echo "  Pars opercularis: $BROCA_OPERCULARIS"
 echo "  Pars triangularis: $BROCA_TRIANGULARIS"
 echo "  Lateral STG: $LATERAL_STG"
 echo "  Transverse temporal: $TRANSVERSE_TEMPORAL"
+echo "  Planum Temporale: $PLANUM_TEMPORALE"
 
 mkdir -p "$OUT"
 
@@ -118,7 +120,8 @@ for FS_SUB in "$FS_ROOT"/H*_reg_MPFcor_freesurfer; do
         "$BROCA_OPERCULARIS" \
         "$BROCA_TRIANGULARIS" \
         "$LATERAL_STG" \
-        "$TRANSVERSE_TEMPORAL" <<'PYTHON'
+        "$TRANSVERSE_TEMPORAL" \
+        "$PLANUM_TEMPORALE" <<'PYTHON'
 
 import sys
 import numpy as np
@@ -133,6 +136,7 @@ pars_opercularis = int(sys.argv[5])
 pars_triangularis = int(sys.argv[6])
 lateral_stg = int(sys.argv[7])
 transverse_temporal = int(sys.argv[8])
+planum_temporale = int(sys.argv[9])
 
 # Load parcellations
 dk_img = nib.load(dk_file)
@@ -168,9 +172,13 @@ stg_ras = nib.affines.apply_affine(
 # Smaller/more negative RAS Y is posterior.
 posterior_edge = np.min(transverse_ras[:, 1])
 
+# Keep posterior portion of lateral STG
 posterior_stg = stg_coords[
     stg_ras[:, 1] < posterior_edge
 ]
+
+# Include the planum temporale
+planum_coords = np.column_stack(np.where(destrieux == planum_temporale))
 
 wernicke = np.zeros(destrieux.shape, dtype=np.uint8)
 
@@ -179,6 +187,13 @@ if posterior_stg.shape[0] > 0:
         posterior_stg[:, 0],
         posterior_stg[:, 1],
         posterior_stg[:, 2]
+    ] = 1
+
+if planum_coords.shape[0] > 0:
+    wernicke[
+        planum_coords[:, 0],
+        planum_coords[:, 1],
+        planum_coords[:, 2]
     ] = 1
 
 # Save native-space masks
